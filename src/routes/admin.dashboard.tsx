@@ -7,7 +7,16 @@ import { GlassCard } from "@/components/silence/GlassCard";
 import { getDashboardStats } from "@/lib/stats.functions";
 
 export const Route = createFileRoute("/admin/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — Silence API" }] }),
+  head: () => ({
+    meta: [
+      { title: "Dashboard — Silence API" },
+      { name: "description", content: "Silence API administrative dashboard for monitoring and management." },
+      { property: "og:title", content: "Dashboard — Silence API" },
+      { property: "og:description", content: "Silence API administrative dashboard for monitoring and management." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: Dashboard,
 });
 
@@ -21,6 +30,9 @@ function Dashboard() {
     queryFn: () => fetchStats(),
     refetchInterval: 10_000,
   });
+  const recentRows = Array.isArray(data?.recent) ? data.recent : [];
+  const modelRows = Array.isArray(data?.byModel) ? data.byModel : [];
+  const providerRows = Array.isArray(data?.byProvider) ? data.byProvider : [];
 
   const kpis = [
     { k: "Total Cost", v: data ? fmtUsd(data.totals.cost) : "—", sub: data ? `${fmtUsd(data.today.cost)} today` : "" },
@@ -64,11 +76,11 @@ function Dashboard() {
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <GlassCard className="p-4">
             <div className="mb-2 text-sm font-medium">By Model</div>
-            <BreakdownTable rows={data?.byModel ?? []} />
+           <BreakdownTable rows={modelRows} />
           </GlassCard>
           <GlassCard className="p-4">
             <div className="mb-2 text-sm font-medium">By Provider</div>
-            <BreakdownTable rows={data?.byProvider ?? []} />
+           <BreakdownTable rows={providerRows} />
           </GlassCard>
         </div>
 
@@ -89,7 +101,7 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/20">
-                {(data?.recent ?? []).map((r, i) => (
+                 {recentRows.map((r, i) => (
                   <tr key={i} className="hover:bg-white/50 transition-colors">
                     <td className="py-2 pr-3 whitespace-nowrap tabular-nums">{new Date(r.ts).toLocaleTimeString()}</td>
                     <td className="py-2 pr-3 font-medium">{r.model}</td>
@@ -103,7 +115,7 @@ function Dashboard() {
                     </td>
                   </tr>
                 ))}
-                {!data?.recent?.length && (
+                 {recentRows.length === 0 && (
                   <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">No requests yet.</td></tr>
                 )}
               </tbody>

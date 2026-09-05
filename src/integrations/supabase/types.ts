@@ -44,6 +44,7 @@ export type Database = {
           owner_label: string
           total_cost: number
           total_requests: number
+          total_tokens: number
           user_id: string | null
         }
         Insert: {
@@ -57,6 +58,7 @@ export type Database = {
           owner_label: string
           total_cost?: number
           total_requests?: number
+          total_tokens?: number
           user_id?: string | null
         }
         Update: {
@@ -70,6 +72,7 @@ export type Database = {
           owner_label?: string
           total_cost?: number
           total_requests?: number
+          total_tokens?: number
           user_id?: string | null
         }
         Relationships: [
@@ -217,6 +220,33 @@ export type Database = {
           },
         ]
       }
+      global_stats: {
+        Row: {
+          id: string
+          total_cost: number
+          total_requests: number
+          total_successes: number
+          total_tokens: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          total_cost?: number
+          total_requests?: number
+          total_successes?: number
+          total_tokens?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          total_cost?: number
+          total_requests?: number
+          total_successes?: number
+          total_tokens?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ip_strikes: {
         Row: {
           count: number
@@ -321,6 +351,9 @@ export type Database = {
           created_by: string | null
           email: string
           id: string
+          is_frozen: boolean
+          max_api_keys: number
+          max_tokens_limit: number
           suspended: boolean
           suspended_at: string | null
           suspended_reason: string | null
@@ -331,6 +364,9 @@ export type Database = {
           created_by?: string | null
           email: string
           id: string
+          is_frozen?: boolean
+          max_api_keys?: number
+          max_tokens_limit?: number
           suspended?: boolean
           suspended_at?: string | null
           suspended_reason?: string | null
@@ -341,6 +377,9 @@ export type Database = {
           created_by?: string | null
           email?: string
           id?: string
+          is_frozen?: boolean
+          max_api_keys?: number
+          max_tokens_limit?: number
           suspended?: boolean
           suspended_at?: string | null
           suspended_reason?: string | null
@@ -646,6 +685,7 @@ export type Database = {
         Args: { _cost: number; _id: string }
         Returns: undefined
       }
+      gw_get_admin_usage_summary: { Args: never; Returns: Json }
       gw_is_ip_banned: { Args: { _ip: string }; Returns: boolean }
       gw_manual_ban_ip: {
         Args: { _hours?: number; _ip: string; _reason: string }
@@ -654,6 +694,22 @@ export type Database = {
       gw_record_ip_strike: {
         Args: { _ip: string; _reason: string }
         Returns: number
+      }
+      gw_record_usage: {
+        Args: {
+          _api_key_id: string
+          _cost: number
+          _input_tokens: number
+          _internal_cost: number
+          _latency_ms: number
+          _model_id: string
+          _model_name: string
+          _output_tokens: number
+          _provider_id: string
+          _provider_name: string
+          _success: boolean
+        }
+        Returns: undefined
       }
       gw_reserve_token_slot: {
         Args: { _id: string; _rpm_limit: number }
@@ -686,12 +742,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -715,11 +771,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -740,11 +796,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -765,11 +821,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -782,11 +838,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

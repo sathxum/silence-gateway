@@ -21,7 +21,16 @@ import {
 import { ConfirmDeleteModal } from "@/components/silence/ConfirmDeleteModal";
 
 export const Route = createFileRoute("/admin/providers")({
-  head: () => ({ meta: [{ title: "Providers — Silence API" }] }),
+  head: () => ({
+    meta: [
+      { title: "Upstream Providers — Silence API" },
+      { name: "description", content: "Configure AI providers, base URLs, and auto-rotating API tokens." },
+      { property: "og:title", content: "Upstream Providers — Silence API" },
+      { property: "og:description", content: "Configure AI providers, base URLs, and auto-rotating API tokens." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (<AdminGuard><AdminShell><ProvidersPage /></AdminShell></AdminGuard>),
 });
 
@@ -46,6 +55,7 @@ function ProvidersPage() {
   const getSecrets = useServerFn(getProviderSecrets);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["providers"], queryFn: () => list() });
+  const providerRows = Array.isArray(q.data) ? q.data : [];
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ProviderForm>(emptyProvider);
@@ -115,7 +125,7 @@ function ProvidersPage() {
 
       <div className="space-y-3">
         {q.isLoading && <GlassCard className="p-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></GlassCard>}
-        {q.data && q.data.length === 0 && (
+        {providerRows.length === 0 && (
           <div className="relative overflow-hidden rounded-2xl border border-dashed border-[color:var(--border)] bg-gradient-to-b from-[color:var(--brand-soft)]/40 to-transparent p-8 text-center">
             <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 ring-1 ring-inset ring-primary/20">
               <KeyRound className="h-6 w-6 text-primary" />
@@ -130,7 +140,7 @@ function ProvidersPage() {
             </button>
           </div>
         )}
-        {q.data?.map((p) => {
+        {providerRows.map((p) => {
           const isOpen = expanded[p.id] ?? true;
           return (
             <GlassCard key={p.id} className="overflow-hidden">
@@ -161,7 +171,7 @@ function ProvidersPage() {
       {deletingId && (
         <ConfirmDeleteModal
           title="Delete Provider"
-          description={`Are you sure you want to delete "${q.data?.find(p => p.id === deletingId)?.name}"? All associated tokens and configurations will be removed permanently.`}
+           description={`Are you sure you want to delete "${providerRows.find(p => p.id === deletingId)?.name}"? All associated tokens and configurations will be removed permanently.`}
           onConfirm={() => {
             deleteM.mutate(deletingId);
             setDeletingId(null);
@@ -274,8 +284,8 @@ function ProviderModal({ form, setForm, onClose, onSave, saving }: { form: Provi
                 Close
               </button>
               <button type="submit" disabled={saving} 
-                className="btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60">
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />} {form.id ? "Save changes" : "Create provider"}
+                className="btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60 relative z-30">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : (form.id ? "Save changes" : "Create provider")}
               </button>
             </div>
           </form>
@@ -332,6 +342,7 @@ function TokensSection({ providerId }: { providerId: string }) {
   const qc = useQueryClient();
   const key = ["provider-tokens", providerId];
   const q = useQuery({ queryKey: key, queryFn: () => list({ data: { provider_id: providerId } }) });
+  const tokenRows = Array.isArray(q.data) ? q.data : [];
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<TokenForm>(emptyToken(providerId));
@@ -381,7 +392,7 @@ function TokensSection({ providerId }: { providerId: string }) {
     <div className="border-t border-border/60 bg-[color:var(--brand-soft)]/40 p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <KeyRound className="h-3.5 w-3.5" /> Tokens ({q.data?.length ?? 0})
+           <KeyRound className="h-3.5 w-3.5" /> Tokens ({tokenRows.length})
         </div>
         <button onClick={() => { if (open && !form.id) { setOpen(false); return; } setForm(emptyToken(providerId)); setOpen(true); }}
           className="btn-primary inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold text-white">
@@ -394,8 +405,8 @@ function TokensSection({ providerId }: { providerId: string }) {
         </div>
       )}
       {q.isLoading && <div className="py-4 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin" /></div>}
-      {q.data && q.data.length === 0 && <div className="py-4 text-center text-xs text-muted-foreground">No tokens yet. Add one so the gateway can call this provider.</div>}
-      {q.data && q.data.length > 0 && (
+      {tokenRows.length === 0 && <div className="py-4 text-center text-xs text-muted-foreground">No tokens yet. Add one so the gateway can call this provider.</div>}
+      {tokenRows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-xs">
             <thead className="text-left uppercase tracking-wider text-muted-foreground/80">
@@ -410,7 +421,7 @@ function TokensSection({ providerId }: { providerId: string }) {
               </tr>
             </thead>
             <tbody>
-              {q.data.map((t) => (
+              {tokenRows.map((t) => (
                 <tr key={t.id} className="border-t border-border/40">
                   <td className="px-2 py-2 font-medium">{t.label}</td>
                   <td className="px-2 py-2 font-mono text-muted-foreground">{t.api_key_masked}</td>
@@ -494,8 +505,8 @@ function InlineTokenForm({ form, setForm, onClose, onSave, saving }: { form: Tok
         </label>
         <div className="flex items-center gap-2">
           <button type="button" onClick={onClose} className="rounded-lg glass ring-metallic px-3 py-1.5 text-xs">Cancel</button>
-          <button type="submit" disabled={saving} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-60">
-            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {form.id ? "Save" : "Add token"}
+          <button type="submit" disabled={saving} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-60 relative z-30">
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (form.id ? "Save" : "Add token")}
           </button>
         </div>
       </div>

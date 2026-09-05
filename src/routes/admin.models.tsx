@@ -12,7 +12,16 @@ import { Loader2, Plus, Trash2, Pencil, X, Search, Cpu, Boxes, Zap, Copy, Check,
 import { ConfirmDeleteModal } from "@/components/silence/ConfirmDeleteModal";
 
 export const Route = createFileRoute("/admin/models")({
-  head: () => ({ meta: [{ title: "Models — Silence API" }] }),
+  head: () => ({
+    meta: [
+      { title: "Model Catalog — Silence API" },
+      { name: "description", content: "Configure and manage AI models, pricing, and provider mappings." },
+      { property: "og:title", content: "Model Catalog — Silence API" },
+      { property: "og:description", content: "Configure and manage AI models, pricing, and provider mappings." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (<AdminGuard><AdminShell><ModelsPage /></AdminShell></AdminGuard>),
 });
 
@@ -34,6 +43,8 @@ function ModelsPage() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["models"], queryFn: () => list() });
   const qp = useQuery({ queryKey: ["providers"], queryFn: () => listP() });
+  const modelRows = Array.isArray(q.data) ? q.data : [];
+  const providerRows = Array.isArray(qp.data) ? qp.data : [];
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Form>(empty);
@@ -68,21 +79,21 @@ function ModelsPage() {
   }
 
   const filtered = useMemo(() => {
-    const rows = q.data ?? [];
+     const rows = modelRows;
     return rows.filter((m) => {
       if (providerFilter !== "all" && m.provider_id !== providerFilter) return false;
       if (!query.trim()) return true;
       const s = query.toLowerCase();
       return m.display_name.toLowerCase().includes(s) || m.upstream_model.toLowerCase().includes(s) || (m.provider_name ?? "").toLowerCase().includes(s);
     });
-  }, [q.data, query, providerFilter]);
+  }, [modelRows, query, providerFilter]);
 
   const stats = useMemo(() => {
-    const rows = q.data ?? [];
+    const rows = modelRows;
     const active = rows.filter((m) => m.enabled).length;
     const providers = new Set(rows.map((m) => m.provider_id)).size;
     return { total: rows.length, active, providers };
-  }, [q.data]);
+  }, [modelRows]);
 
   async function copyId(id: string, upstream: string) {
     try { await navigator.clipboard.writeText(upstream); setCopiedId(id); setTimeout(() => setCopiedId(null), 1200); } catch {}
@@ -99,15 +110,15 @@ function ModelsPage() {
           </p>
         </div>
         <button
-          onClick={() => { setForm({ ...empty, provider_id: qp.data?.[0]?.id ?? "" }); setOpen(true); }}
-          disabled={!qp.data || qp.data.length === 0}
+           onClick={() => { setForm({ ...empty, provider_id: providerRows[0]?.id ?? "" }); setOpen(true); }}
+           disabled={providerRows.length === 0}
           className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 transition hover:shadow-primary/30 disabled:opacity-50"
         >
           <Plus className="h-4 w-4" /> Add model
         </button>
       </div>
 
-      {qp.data && qp.data.length === 0 && (
+       {providerRows.length === 0 && (
         <GlassCard className="p-6 text-sm text-muted-foreground">Add a provider first, then you can register models under it.</GlassCard>
       )}
 
@@ -134,7 +145,7 @@ function ModelsPage() {
             className="rounded-lg border border-border bg-background/60 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
           >
             <option value="all">All providers</option>
-            {(qp.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+             {providerRows.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
       </GlassCard>
@@ -143,14 +154,14 @@ function ModelsPage() {
       {q.isLoading && (
         <GlassCard className="p-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></GlassCard>
       )}
-      {q.data && q.data.length === 0 && (
+       {modelRows.length === 0 && (
         <GlassCard className="flex flex-col items-center gap-3 p-12 text-center">
           <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[color:var(--brand-soft)]"><Boxes className="h-6 w-6 text-primary" /></div>
           <div className="text-base font-medium">No models yet</div>
           <div className="max-w-sm text-sm text-muted-foreground">Register your first model to expose it via the OpenAI-compatible endpoint at <code className="rounded bg-muted px-1 py-0.5 text-xs">/v1/chat/completions</code>.</div>
         </GlassCard>
       )}
-      {q.data && q.data.length > 0 && filtered.length === 0 && (
+       {modelRows.length > 0 && filtered.length === 0 && (
         <GlassCard className="p-10 text-center text-sm text-muted-foreground">No models match your filters.</GlassCard>
       )}
       {filtered.length > 0 && (
@@ -411,10 +422,9 @@ function Modal({ form, setForm, providers, onClose, onSave, saving }: {
             type="submit" 
             form="model-form"
             disabled={saving} 
-            className="btn btn-save inline-flex items-center gap-2"
+            className="btn btn-save inline-flex items-center justify-center gap-2 relative z-30"
           >
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Save Changes
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
           </button>
         </div>
       </div>

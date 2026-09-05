@@ -11,7 +11,16 @@ import { Loader2, Plus, Trash2, Copy, Check, KeyRound, Power, Wallet, AlertCircl
 import { ConfirmDeleteModal } from "@/components/silence/ConfirmDeleteModal";
 
 export const Route = createFileRoute("/admin/api-keys")({
-  head: () => ({ meta: [{ title: "API Keys — Silence API" }] }),
+  head: () => ({
+    meta: [
+      { title: "Gateway API Keys — Silence API" },
+      { name: "description", content: "Manage administrative and customer API keys for the Silence gateway." },
+      { property: "og:title", content: "Gateway API Keys — Silence API" },
+      { property: "og:description", content: "Manage administrative and customer API keys for the Silence gateway." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (<AdminGuard><AdminShell><Inner /></AdminShell></AdminGuard>),
 });
 
@@ -23,6 +32,7 @@ function Inner() {
   const del = useServerFn(deleteApiKey);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["api-keys"], queryFn: () => list() });
+  const keyRows = Array.isArray(q.data) ? q.data : [];
 
   const [label, setLabel] = useState("");
   const [balance, setBalance] = useState(0);
@@ -60,8 +70,8 @@ function Inner() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="metallic-text text-2xl font-semibold">API Keys</h1>
-        <p className="text-sm text-muted-foreground">Issue keys for your customers. Only shown once at creation — store it safely.</p>
+        <h1 className="metallic-text text-2xl font-semibold sm:text-3xl">API Keys</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Issue keys for your customers. Only shown once at creation — store it safely.</p>
       </div>
 
       <GlassCard className="p-5">
@@ -94,53 +104,77 @@ function Inner() {
         </GlassCard>
       )}
 
-      <GlassCard className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
-            <thead className="border-b border-border/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">Owner</th>
-                <th className="px-4 py-3">Key</th>
-                <th className="px-4 py-3">Balance</th>
-                <th className="px-4 py-3">Requests</th>
-                <th className="px-4 py-3">Enabled</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {q.isLoading && (<tr><td colSpan={6} className="px-4 py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>)}
-              {q.data?.map((k) => (
-                <tr key={k.id} className="border-b border-border/40 last:border-0">
-                  <td className="px-4 py-3 font-medium">{k.owner_label}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{k.key_prefix}…</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <span className="font-mono">${Number(k.balance).toFixed(4)}</span>
-                      <button onClick={() => { const v = prompt("Add balance (use negative to deduct)", "10"); if (v != null && !isNaN(Number(v))) adjustM.mutate({ id: k.id, delta: Number(v) }); }}
-                        className="rounded-md glass ring-metallic p-1 hover:bg-[color:var(--brand-soft)]" title="Adjust"><Wallet className="h-3.5 w-3.5" /></button>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{k.total_requests}</td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => toggleM.mutate({ id: k.id, enabled: !k.enabled })}
-                      className={"relative inline-flex h-5 w-9 items-center rounded-full transition " + (k.enabled ? "bg-primary" : "bg-slate-300")}>
-                      <span className={"inline-block h-4 w-4 transform rounded-full bg-white transition " + (k.enabled ? "translate-x-4" : "translate-x-0.5")} />
+      <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {q.isLoading && (
+          <GlassCard className="col-span-full py-16 text-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground opacity-20" />
+          </GlassCard>
+        )}
+         {keyRows.map((k) => (
+          <div key={k.id} className={`card-3d group relative ${!k.enabled ? "opacity-75 grayscale-[0.5]" : ""}`}>
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[60%] rounded-[26px] bg-gradient-to-b from-white/20 to-transparent z-20" />
+            <div className="card-3d-content relative z-10 flex flex-col p-[30px_26px_26px]">
+              <div className="flex items-start justify-between gap-3.5">
+                <div className="min-w-0">
+                  <h3 className="font-['Space_Grotesk'] text-[20px] font-bold leading-[1.3] tracking-tight text-foreground group-hover:text-primary">
+                    {k.owner_label}
+                  </h3>
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <span className="font-mono text-[12px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md border border-border/50">
+                      {k.key_prefix}••••••••
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => toggleM.mutate({ id: k.id, enabled: !k.enabled })}
+                  className={`relative h-7 w-12 flex-shrink-0 rounded-full border border-white/50 transition-all duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_6px_14px_-4px_rgba(47,111,237,0.6)] ${
+                    k.enabled ? "bg-gradient-to-b from-[#4a8bff] to-[#2f6fed]" : "bg-gradient-to-b from-[#dbe0ea] to-[#c7cedb]"
+                  }`}
+                >
+                  <div className={`absolute top-[3px] h-5 w-5 rounded-full bg-gradient-to-b from-white to-[#e8edf7] shadow-[0_2px_4px_rgba(0,0,0,0.3)] transition-all duration-200 ${
+                    k.enabled ? "left-[23px]" : "left-[3px]"
+                  }`} />
+                </button>
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="flex flex-col items-center justify-center rounded-[14px] border border-white/85 bg-gradient-to-br from-white/85 to-white/45 p-[14px_6px] text-center shadow-[0_6px_14px_-8px_rgba(40,60,110,0.2),inset_0_1px_0_rgba(255,255,255,0.8)]">
+                  <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground/60 mb-1">Balance</div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="text-[16px] font-bold text-[#1650c9]">${Number(k.balance).toFixed(2)}</div>
+                    <button onClick={() => { const v = prompt("Adjust balance (+/-)", "10"); if (v != null && !isNaN(Number(v))) adjustM.mutate({ id: k.id, delta: Number(v) }); }}
+                      className="rounded-full bg-primary/10 p-1 text-primary hover:bg-primary/20 transition-colors">
+                      <Plus className="size-3" />
                     </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => toggleM.mutate({ id: k.id, enabled: !k.enabled })} className="rounded-md glass ring-metallic p-2 hover:bg-[color:var(--brand-soft)]" title="Toggle"><Power className="h-3.5 w-3.5" /></button>
-                      <button onClick={() => setDeletingId(k.id)}
-                        className="rounded-md glass ring-metallic p-2 text-destructive hover:bg-destructive/10" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {q.data && q.data.length === 0 && (<tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">No API keys yet.</td></tr>)}
-            </tbody>
-          </table>
-        </div>
-      </GlassCard>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center justify-center rounded-[14px] border border-white/85 bg-gradient-to-br from-white/85 to-white/45 p-[14px_6px] text-center shadow-[0_6px_14px_-8px_rgba(40,60,110,0.2),inset_0_1px_0_rgba(255,255,255,0.8)]">
+                  <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground/60 mb-1">Requests</div>
+                  <div className="text-[16px] font-bold text-foreground">{k.total_requests}</div>
+                </div>
+              </div>
+
+              <div className="my-[20px] h-px w-full bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={() => setDeletingId(k.id)}
+                  className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/90 bg-gradient-to-br from-white to-[#eef2f9] text-destructive transition-all hover:scale-105 hover:bg-destructive/10 shadow-[0_2px_5px_-1px_rgba(40,60,110,0.18),inset_0_1px_0_rgba(255,255,255,0.8)]"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {q.data && q.data.length === 0 && (
+          <GlassCard className="col-span-full py-20 text-center">
+            <KeyRound className="mx-auto mb-4 h-10 w-10 text-muted-foreground opacity-20" />
+            <h3 className="text-base font-medium">No API keys yet</h3>
+            <p className="text-sm text-muted-foreground">Issue your first key to start using the gateway.</p>
+          </GlassCard>
+        )}
+      </div>
 
       {deletingId && (
         <ConfirmDeleteModal

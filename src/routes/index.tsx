@@ -2,6 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldCheck, Zap, GitBranch, LineChart, Lock, Radio, ArrowRight, Sparkles, Check, Copy, Terminal, Boxes } from "lucide-react";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Silence API — The Intelligent AI Gateway" },
+      { name: "description", content: "One OpenAI-compatible endpoint for every AI model. Encrypted providers, intelligent routing, real-time analytics, and enterprise reliability." },
+      { property: "og:title", content: "Silence API — The Intelligent AI Gateway" },
+      { property: "og:description", content: "One OpenAI-compatible endpoint for every AI model. Encrypted providers, intelligent routing, and real-time analytics." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Landing,
 });
 
@@ -47,8 +57,8 @@ function Landing() {
           <a href="#security" className="rounded-md px-3 py-2 text-muted-foreground hover:text-foreground">Security</a>
         </nav>
         <div className="flex items-center gap-2">
-          <Link to="/admin" className="rounded-lg px-3 py-2 text-sm font-medium text-[color:var(--brand-strong)] hover:bg-[color:var(--brand-soft)]">Sign in</Link>
-          <Link to="/admin" className="btn-primary hidden rounded-lg px-4 py-2 text-sm font-semibold sm:inline-flex">Get started</Link>
+          <Link to="/user" className="rounded-lg px-3 py-2 text-sm font-medium text-[color:var(--brand-strong)] hover:bg-[color:var(--brand-soft)]">User Login</Link>
+          <Link to="/admin" className="rounded-lg px-3 py-2 text-sm font-medium text-[color:var(--brand-strong)] hover:bg-[color:var(--brand-soft)]">Admin</Link>
         </div>
       </header>
 

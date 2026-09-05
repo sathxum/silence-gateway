@@ -100,7 +100,10 @@ export async function runGateway(request: Request, openaiBody: any): Promise<Gat
     (async () =>
       supabaseAdmin
         .from("models").select("*")
-        .or(`display_name.eq.${modelName},upstream_model.eq.${modelName}`)
+        // Case-insensitive exact match (ilike without wildcards). Clients type
+        // `glm-5.2` while the catalog stores `Glm-5.2`; an eq match 404'd those.
+        // modelName is already restricted to a safe character allow-list above.
+        .or(`display_name.ilike.${modelName},upstream_model.ilike.${modelName}`)
         .eq("enabled", true).limit(1))(),
     apiKey.user_id
       ? (async () => {
@@ -111,6 +114,14 @@ export async function runGateway(request: Request, openaiBody: any): Promise<Gat
   ]);
   if ((suspendedRes as any)?.data) {
     return { kind: "error", status: 403, body: { error: { message: "Account suspended. Contact admin.", type: "account_suspended" } } };
+  }
+  const isFrozen = apiKey.user_id ? await (async () => {
+    try { return await supabaseAdmin.rpc("is_user_frozen" as any, { _user_id: apiKey.user_id }); }
+    catch { return { data: false }; }
+  })() : { data: false };
+  
+  if ((isFrozen as any)?.data) {
+    return { kind: "error", status: 403, body: { error: { message: "Account balance frozen. Contact admin.", type: "account_frozen" } } };
   }
   if ((modelRes as any).error) return { kind: "error", status: 500, body: { error: { message: (modelRes as any).error.message } } };
   const model = (modelRes as any).data?.[0];
@@ -221,6 +232,15 @@ export async function runGateway(request: Request, openaiBody: any): Promise<Gat
     };
   }
 
+  // Check token limit
+  if (apiKey.user_id) {
+    const { data: userProfile } = await supabaseAdmin.from("profiles").select("*" as any).eq("id", apiKey.user_id).single();
+    const { data: userStats } = await supabaseAdmin.rpc("gw_get_user_token_total" as any, { _user_id: apiKey.user_id });
+    if (userProfile && (userStats as any || 0) >= (userProfile as any).max_tokens_limit) {
+      return { kind: "error", status: 403, body: { error: { message: "Global token limit reached for this account.", type: "limit_exceeded" } } };
+    }
+  }
+
   // OpenAI-compatible streaming does NOT emit `usage` unless the client opts in.
   // Without this, prompt/completion/reasoning tokens all come back as 0 and the
   // dashboard shows nothing for streamed (Claude Code / OpenAI SDK stream) calls.
@@ -261,7 +281,9 @@ export async function runGateway(request: Request, openaiBody: any): Promise<Gat
     return { kind: "error", status: 429, body: { error: { message: "All provider tokens at per-minute cap. Add another token or lower load.", type: "rate_limit" } } };
   }
   // Put reserved first, keep rest as fallbacks for upstream errors.
-  const ordered = [reservedToken, ...usable.filter((x) => x !== reservedToken)];
+  // Keep a broken provider from consuming the Worker's entire subrequest
+  // budget when an account has a large number of configured tokens.
+  const ordered = [reservedToken, ...usable.filter((x) => x !== reservedToken)].slice(0, 8);
 
   for (const t of ordered) {
     const tokenKey = t.api_key_enc ? decryptSecret(t.api_key_enc) : "";
@@ -270,12 +292,30 @@ export async function runGateway(request: Request, openaiBody: any): Promise<Gat
     let res: Response;
     try {
       const authHeaders: Record<string, string> = tokenKey ? { Authorization: `Bearer ${tokenKey}` } : {};
+      // Never impose an artificial generation deadline. Reasoning and agentic
+      // requests can legitimately take many minutes before the upstream sends
+      // response headers. Aborting here discarded valid, billable work and was
+      // the exact cause of the repeated 60-second Claude Code failures.
       res = await fetch(url, {
         method: "POST",
-        headers: { ...authHeaders, "Content-Type": "application/json", ...extraHeaders },
+        // Propagate an explicit client disconnect upstream. This is not an
+        // artificial timeout, so long-running generations are still allowed.
+        signal: request.signal,
+        headers: {
+          ...authHeaders,
+          "Content-Type": "application/json",
+          ...(upstreamBody.stream ? { Accept: "text/event-stream" } : {}),
+          ...extraHeaders,
+        },
         body: JSON.stringify(upstreamBody),
       });
     } catch (e: any) {
+      // Do not fail over after the caller has gone away. Retrying a cancelled
+      // generation would keep spending provider credits with nobody to receive
+      // the result.
+      if (request.signal.aborted) {
+        return { kind: "error", status: 499, body: { error: { message: "Request cancelled by client", type: "request_cancelled" } } };
+      }
       attempts.push({ token: t.id, error: e?.message ?? "network" });
       if (t.id !== "__keyless__") await cooldownToken(supabaseAdmin, t.id, 30, "network");
       await logError(supabaseAdmin, { provider, model, token: t, tokenKey, status: null, message: e?.message ?? "network error", response: "", latency: Date.now() - attemptStart, result: "failover" });
@@ -349,7 +389,7 @@ export async function runGateway(request: Request, openaiBody: any): Promise<Gat
       // upstream body through a Transform keeps the worker context alive
       // until the client body ends, and the flush() runs our DB writes.
       // markUsed is deferred into flush() so it does NOT block first-byte.
-      const clientStream = res.body.pipeThrough(
+      const clientStream = createResilientUpstreamStream(res.body).pipeThrough(
         createMeterTransform({ supabaseAdmin, apiKey, provider, model, token: t, attemptStart }),
       );
       return { kind: "stream", body: clientStream, tokenId: t.id, startedAt: attemptStart, ctx: { sb: supabaseAdmin, apiKey, provider, model, token: t, attemptStart } };
@@ -388,6 +428,37 @@ export async function runGateway(request: Request, openaiBody: any): Promise<Gat
   return { kind: "error", status: 502, body: { error: { message: "All tokens exhausted", type: "upstream_error", attempts } } };
 }
 
+// Convert an upstream TCP/body reset into a valid end-of-stream marker. Without
+// this boundary, fetch clients receive a network exception with no HTTP
+// response, and some SDKs then crash while reading `error.response`.
+function createResilientUpstreamStream(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+  const reader = body.getReader();
+  const encoder = new TextEncoder();
+  let ended = false;
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      if (ended) return;
+      try {
+        const { value, done } = await reader.read();
+        if (done) {
+          ended = true;
+          controller.close();
+          return;
+        }
+        if (value) controller.enqueue(value);
+      } catch {
+        ended = true;
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      }
+    },
+    cancel(reason) {
+      ended = true;
+      void reader.cancel(reason);
+    },
+  });
+}
+
 // TransformStream that forwards SSE chunks untouched to the client while
 // parsing the trailing `usage` frame. On flush() (stream end) it debits
 // balance and writes the usage_events row. Because the returned Response
@@ -399,6 +470,7 @@ function createMeterTransform(
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   let buf = "";
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
   let inTok = 0, outTok = 0, reasoningTok = 0;
   const parseChunk = (text: string) => {
     buf += text;
@@ -422,6 +494,13 @@ function createMeterTransform(
     }
   };
   return new TransformStream<Uint8Array, Uint8Array>({
+    start(controller) {
+      // Valid SSE comment frames keep quiet reasoning requests flowing through
+      // buffering proxies without changing the provider payload.
+      heartbeat = setInterval(() => {
+        try { controller.enqueue(encoder.encode(": silence-heartbeat\n\n")); } catch {}
+      }, 15_000);
+    },
     transform(chunk, controller) {
       let text = "";
       try { text = decoder.decode(chunk, { stream: true }); } catch {}
@@ -434,6 +513,7 @@ function createMeterTransform(
       }
     },
     async flush() {
+      if (heartbeat) clearInterval(heartbeat);
       try { parseChunk(decoder.decode()); } catch {}
       if (reasoningTok && outTok < reasoningTok) outTok += reasoningTok;
       const { model, apiKey, token, provider, supabaseAdmin: sb, attemptStart } = ctx;
@@ -501,7 +581,14 @@ async function bumpUsage(sb: any, token: any, cost: number, totalTokens: number,
   if (apiKey?.id) {
     // If cost or tokens is 0 (e.g. error), we still record the request count
     writes.push(sb.rpc("gw_debit_api_key", { _id: apiKey.id, _cost: cost, _tokens: totalTokens }));
+    // Also update global aggregate tokens in profile if needed (already handled by gw_debit_api_key which should increment profile totals if designed that way, 
+    // but the migration added total_tokens to api_keys, so gw_debit_api_key handles it per key. 
+    // The profile max check uses gw_get_user_token_total which sums these.)
   }
+  
+  // Update global stats
+  writes.push(sb.rpc("gw_update_global_stats" as any, { _cost: cost, _tokens: totalTokens }));
+
   await Promise.allSettled(writes);
 }
 

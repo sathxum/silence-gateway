@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { collectOpenAIStream } from "@/lib/anthropic-bridge.server";
 
 export const Route = createFileRoute("/api/public/v1/chat/completions")({
   server: {
@@ -36,17 +37,35 @@ async function handleChat(request: Request): Promise<Response> {
   if (!body || typeof body !== "object") return json({ error: { message: "Invalid JSON body" } }, 400);
   const { runGateway } = await import("@/lib/gateway-core.server");
   const started = Date.now();
-  const r = await runGateway(request, body);
+  const wantStream = body.stream === true;
+  // Avoid a buffered first-byte timeout for slow reasoning models while
+  // preserving the caller's requested non-streaming JSON response.
+  const gatewayBody = wantStream ? body : { ...body, stream: true };
+  const r = await runGateway(request, gatewayBody);
   if (r.kind === "error") return json(r.body, r.status);
   if (r.kind === "upstream_error") {
     return new Response(r.body, { status: r.status, headers: { "content-type": r.contentType, ...cors() } });
   }
   if (r.kind === "stream") {
+    if (!wantStream) {
+      const aggregated = await collectOpenAIStream(r.body);
+      return new Response(JSON.stringify(aggregated), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "x-silence-token": r.tokenId,
+          "x-silence-latency-ms": String(Date.now() - started),
+          ...cors(),
+        },
+      });
+    }
     return new Response(r.body, {
       status: 200,
       headers: {
         "content-type": "text/event-stream",
         "cache-control": "no-cache",
+        "x-accel-buffering": "no",
+        "connection": "keep-alive",
         "x-silence-token": r.tokenId,
         "x-silence-latency-ms": String(Date.now() - started),
         ...cors(),

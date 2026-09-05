@@ -31,6 +31,7 @@ function Inner() {
   const del = useServerFn(deleteAdmin);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["admins"], queryFn: () => list() });
+  const adminRows = Array.isArray(q.data) ? q.data : [];
 
   const [meId, setMeId] = useState<string | null>(null);
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setMeId(data.user?.id ?? null)); }, []);
@@ -64,17 +65,17 @@ function Inner() {
   function closeModal() { setOpen(false); setForm({ email: "", password: "" }); }
 
   const filtered = useMemo(() => {
-    const rows = q.data ?? [];
+    const rows = adminRows;
     if (!query.trim()) return rows;
     const s = query.toLowerCase();
     return rows.filter((a) => a.email.toLowerCase().includes(s));
-  }, [q.data, query]);
+  }, [adminRows, query]);
 
   async function copyEmail(email: string) {
     try { await navigator.clipboard.writeText(email); setCopied(email); setTimeout(() => setCopied(null), 1200); } catch {}
   }
 
-  const total = q.data?.length ?? 0;
+  const total = adminRows.length;
 
   return (
     <div className="space-y-6">
@@ -115,10 +116,10 @@ function Inner() {
       {q.isLoading && (
         <GlassCard className="p-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></GlassCard>
       )}
-      {q.data && q.data.length > 0 && filtered.length === 0 && (
+         {adminRows.length > 0 && filtered.length === 0 && (
         <GlassCard className="p-10 text-center text-sm text-muted-foreground">No admins match "{query}".</GlassCard>
       )}
-      {q.data && q.data.length === 0 && (
+       {adminRows.length === 0 && (
         <GlassCard className="flex flex-col items-center gap-3 p-12 text-center">
           <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[color:var(--brand-soft)]"><ShieldCheck className="h-6 w-6 text-primary" /></div>
           <div className="text-base font-medium">No admins yet</div>

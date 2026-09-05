@@ -39,16 +39,17 @@ function ErrorsPage() {
   const q = useQuery({ queryKey: ["error-events"], queryFn: () => listFn(), refetchInterval: 20000 });
   const [filter, setFilter] = useState("");
   const [open, setOpen] = useState<number | null>(null);
+  const errorRows = Array.isArray(q.data) ? q.data : [];
 
   const rows = useMemo(() => {
-    const all = (q.data ?? []) as any[];
+    const all = errorRows as any[];
     const f = filter.trim().toLowerCase();
     if (!f) return all;
     return all.filter((r) =>
       [r.provider_name, r.model, r.token_label, r.key_fingerprint, r.message, String(r.http_status)]
         .filter(Boolean).join(" ").toLowerCase().includes(f)
     );
-  }, [q.data, filter]);
+  }, [errorRows, filter]);
 
   const resolve = useMutation({
     mutationFn: (id: number) => resolveFn({ data: { id } }),

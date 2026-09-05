@@ -23,13 +23,13 @@ import windowsLogo from "@/assets/logos/windows.svg.asset.json";
 export const Route = createFileRoute("/docs")({
   head: () => ({
     meta: [
-      { title: "Docs — Silence API · Claude Code, Kimi Code, OpenAI SDK" },
+      { title: "Documentation — Silence API" },
       {
         name: "description",
         content:
-          "Silence API docs: OpenAI-compatible gateway, Anthropic /v1/messages endpoint, and step-by-step setup for Claude Code and Kimi Code on Linux, macOS and Windows.",
+          "Silence API documentation: OpenAI-compatible gateway setup for Claude Code, Kimi Code, and universal AI SDKs.",
       },
-      { property: "og:title", content: "Silence API Docs — Claude Code Setup" },
+      { property: "og:title", content: "Documentation — Silence API" },
       {
         property: "og:description",
         content:
@@ -176,7 +176,9 @@ npm install -g @anthropic-ai/claude-code
 # verify
 claude --version`,
     windows: `# Windows (PowerShell, run as Administrator)
+# 1. Install Node.js
 winget install OpenJS.NodeJS.LTS
+# 2. Restart PowerShell, then install Claude Code
 npm install -g @anthropic-ai/claude-code
 
 # verify
@@ -255,12 +257,13 @@ curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
 # open a NEW terminal, then:
 kimi --version`,
     windows: `# Windows (PowerShell)
+# 1. Install Kimi Code CLI
 irm https://code.kimi.com/kimi-code/install.ps1 | iex
 
-# Kimi Code uses Git Bash — install Git for Windows if you don't have it:
-#   https://gitforwindows.org/
+# 2. Add to PATH (if not automatic)
+# $env:Path += ";$env:USERPROFILE\\.kimi-code\\bin"
 
-# open a NEW PowerShell, then:
+# 3. Verify
 kimi --version`,
   };
 

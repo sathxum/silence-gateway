@@ -8,7 +8,16 @@ import { useState, type HTMLAttributes, type ReactNode } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/bans")({
-  head: () => ({ meta: [{ title: "Banned IPs — Silence API" }] }),
+  head: () => ({
+    meta: [
+      { title: "IP Bans & Security — Silence API" },
+      { name: "description", content: "Manage IP strikes, active bans, and security policies." },
+      { property: "og:title", content: "IP Bans & Security — Silence API" },
+      { property: "og:description", content: "Manage IP strikes, active bans, and security policies." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: BansPage,
 });
 
@@ -21,6 +30,8 @@ function BansPage() {
 
   const banned = useQuery({ queryKey: ["banned-ips"], queryFn: () => bannedFn() });
   const strikes = useQuery({ queryKey: ["ip-strikes"], queryFn: () => strikesFn() });
+  const bannedRows = Array.isArray(banned.data) ? banned.data : [];
+  const strikeRows = Array.isArray(strikes.data) ? strikes.data : [];
 
   const [ip, setIp] = useState("");
   const [reason, setReason] = useState("");
@@ -51,7 +62,7 @@ function BansPage() {
       <AdminShell>
         <div className="mx-auto max-w-6xl p-4 md:p-8 space-y-6">
           <header>
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Banned IPs</h1>
+            <h1 className="metallic-text text-2xl md:text-3xl font-semibold tracking-tight">Banned IPs</h1>
             <p className="text-muted-foreground text-sm mt-1">
               Auto-ban: 20 invalid-auth strikes in 10 min → 1h block. Valid API keys are never counted.
             </p>
@@ -59,9 +70,9 @@ function BansPage() {
 
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Kpi label="Active bans" value={banned.data?.filter((b: any) => b.active).length ?? 0} />
-            <Kpi label="Total on record" value={banned.data?.length ?? 0} />
-            <Kpi label="IPs with strikes" value={strikes.data?.length ?? 0} />
+             <Kpi label="Active bans" value={bannedRows.filter((b: any) => b.active).length} />
+             <Kpi label="Total on record" value={bannedRows.length} />
+             <Kpi label="IPs with strikes" value={strikeRows.length} />
             <Kpi label="Threshold" value="20 / 10min" />
           </div>
 
@@ -95,8 +106,8 @@ function BansPage() {
                 </thead>
                 <tbody>
                   {banned.isLoading && <tr><td colSpan={7} className="p-4 text-muted-foreground">Loading…</td></tr>}
-                  {banned.data?.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No bans on record.</td></tr>}
-                  {banned.data?.map((b: any) => (
+                   {bannedRows.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No bans on record.</td></tr>}
+                   {bannedRows.map((b: any) => (
                     <tr key={b.ip} className="border-t border-border/40">
                       <Td className="font-mono">{b.ip}</Td>
                       <Td className="max-w-xs truncate" title={b.reason}>{b.reason}</Td>
@@ -131,8 +142,8 @@ function BansPage() {
                   <tr><Th>IP</Th><Th>Count</Th><Th>Reason</Th><Th>Last</Th></tr>
                 </thead>
                 <tbody>
-                  {strikes.data?.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">No strikes recorded.</td></tr>}
-                  {strikes.data?.map((s: any) => (
+                   {strikeRows.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">No strikes recorded.</td></tr>}
+                   {strikeRows.map((s: any) => (
                     <tr key={s.ip} className="border-t border-border/40">
                       <Td className="font-mono">{s.ip}</Td>
                       <Td>
@@ -156,9 +167,9 @@ function BansPage() {
 
 function Kpi({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur p-4">
-      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="text-2xl font-semibold mt-1">{value}</div>
+    <div className="glass-panel rounded-2xl p-4">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-xl font-semibold mt-1 metallic-text">{value}</div>
     </div>
   );
 }
