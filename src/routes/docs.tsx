@@ -314,9 +314,9 @@ kimi -p "Explain this repo in 3 bullet points."`;
       <header className="sticky top-0 z-40 border-b border-[color:var(--hairline)] bg-white/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-4 py-3 md:px-8">
           <Link to="/" className="flex min-w-0 items-center gap-2.5">
-            <div className="grid h-8 w-8 place-items-center rounded-lg btn-primary text-white">
-              <span className="text-sm font-bold">S</span>
-            </div>
+            <span className="grid h-8 w-8 place-items-center rounded-lg border border-[color:var(--hairline)] bg-white shadow-sm">
+              <img src="/logo.png" alt="Silence API logo" className="h-6 w-6 object-contain" />
+            </span>
             <span className="truncate text-sm font-semibold tracking-tight">
               Silence<span className="text-[color:var(--brand)]">API</span>
             </span>

@@ -50,9 +50,9 @@ function Landing() {
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[560px] hero-grid" />
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 sm:py-6">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="grid h-9 w-9 place-items-center rounded-xl btn-primary text-white">
-            <span className="text-base font-bold tracking-tight">S</span>
-          </div>
+          <span className="grid h-9 w-9 place-items-center rounded-xl border border-[color:var(--hairline)] bg-white shadow-sm">
+            <img src="/logo.png" alt="Silence API logo" className="h-7 w-7 object-contain" />
+          </span>
           <span className="text-[17px] font-semibold tracking-tight">
             Silence<span className="text-[color:var(--brand)]">API</span>
           </span>
@@ -80,7 +80,10 @@ function Landing() {
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> OpenAI & Anthropic compatible
               </span>
             </div>
-            <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+            <div className="mt-7 inline-grid h-14 w-14 place-items-center rounded-2xl border border-[color:var(--hairline)] bg-white shadow-[var(--shadow-elegant)]">
+              <img src="/logo.png" alt="Silence API logo" className="h-10 w-10 object-contain" />
+            </div>
+            <h1 className="mt-5 text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
               One AI Gateway for<br />every <span className="text-[color:var(--brand)]">AI model</span>
             </h1>
             <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground sm:text-base">
@@ -235,7 +238,10 @@ resp = client.chat.completions.create({"\n"}
         </section>
 
         <footer className="mt-16 flex flex-col items-center justify-between gap-3 border-t border-[color:var(--hairline)] py-8 text-xs text-muted-foreground sm:flex-row">
-          <span>© {new Date().getFullYear()} Silence API. All rights reserved.</span>
+          <span className="inline-flex items-center gap-2">
+            <img src="/logo.png" alt="" className="h-5 w-5 object-contain" />
+            © {new Date().getFullYear()} Silence API. All rights reserved.
+          </span>
           <div className="flex items-center gap-4">
             <Link to="/docs" className="hover:text-foreground">Docs</Link>
             <Link to="/admin" className="hover:text-foreground">Admin</Link>

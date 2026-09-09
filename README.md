@@ -1,3 +1,5 @@
+<p align="center"><img src="public/logo.png" alt="Silence Gateway logo" width="120" /></p>
+
 # Silence Gateway — self-hosted LLM gateway (one command)
 
 100% self-hosted gateway: app + database + auth + REST + API gateway + public
