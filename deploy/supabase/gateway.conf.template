@@ -55,9 +55,12 @@ server {
     location /auth/v1/ {
         if ($apikey_ok = 0) { return 403; }
         if ($request_method = OPTIONS) { return 204; }
-        rewrite ^/auth/v1/(.*)$ /$1 break;
+        # NOTE: `set` MUST come before `rewrite ... break` — break stops ALL
+        # rewrite-module directives (set included), so a set after it would
+        # never run and proxy_pass would get an empty URL (HTTP 500).
         set $auth_upstream http://silence-auth:9999;
-        proxy_pass $auth_upstream;
+        rewrite ^/auth/v1/(.*)$ /$1 break;
+        proxy_pass $auth_upstream$uri$is_args$args;
         proxy_http_version 1.1;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
@@ -70,9 +73,9 @@ server {
     location /rest/v1/ {
         if ($apikey_ok = 0) { return 403; }
         if ($request_method = OPTIONS) { return 204; }
-        rewrite ^/rest/v1/(.*)$ /$1 break;
         set $rest_upstream http://silence-rest:3000;
-        proxy_pass $rest_upstream;
+        rewrite ^/rest/v1/(.*)$ /$1 break;
+        proxy_pass $rest_upstream$uri$is_args$args;
         proxy_http_version 1.1;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
