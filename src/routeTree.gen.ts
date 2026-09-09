@@ -9,29 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UserRouteImport } from './routes/user'
-import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DocsRouteImport } from './routes/docs'
+import { Route as UserRouteImport } from './routes/user'
+import { Route as AdminIndexRouteImport } from './routes/admin._index'
+import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
+import { Route as AdminApiKeysRouteImport } from './routes/admin.api-keys'
+import { Route as AdminBansRouteImport } from './routes/admin.bans'
+import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
+import { Route as AdminFallbacksRouteImport } from './routes/admin.fallbacks'
+import { Route as AdminModelsRouteImport } from './routes/admin.models'
+import { Route as AdminProvidersRouteImport } from './routes/admin.providers'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as UserIndexRouteImport } from './routes/user.index'
 import { Route as UserDashboardRouteImport } from './routes/user.dashboard'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminProvidersRouteImport } from './routes/admin.providers'
-import { Route as AdminModelsRouteImport } from './routes/admin.models'
-import { Route as AdminFallbacksRouteImport } from './routes/admin.fallbacks'
-import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
-import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
-import { Route as AdminBansRouteImport } from './routes/admin.bans'
-import { Route as AdminApiKeysRouteImport } from './routes/admin.api-keys'
-import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
-import { Route as AdminIndexRouteImport } from './routes/admin._index'
-import { Route as ApiPublicV1ModelsRouteImport } from './routes/api/public/v1/models'
+import { Route as V1MessagesRouteImport } from './routes/v1.messages'
+import { Route as V1ModelsRouteImport } from './routes/v1.models'
+import { Route as V1ChatCompletionsRouteImport } from './routes/v1.chat.completions'
+import { Route as V1MessagesCount_tokensRouteImport } from './routes/v1.messages.count_tokens'
 import { Route as ApiPublicV1MessagesRouteImport } from './routes/api/public/v1/messages'
-import { Route as ApiPublicV1MessagesCount_tokensRouteImport } from './routes/api/public/v1/messages.count_tokens'
+import { Route as ApiPublicV1ModelsRouteImport } from './routes/api/public/v1/models'
 import { Route as ApiPublicV1ChatCompletionsRouteImport } from './routes/api/public/v1/chat.completions'
+import { Route as ApiPublicV1MessagesCount_tokensRouteImport } from './routes/api/public/v1/messages.count_tokens'
 
-const UserRoute = UserRouteImport.update({
-  id: '/user',
-  path: '/user',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsRoute = DocsRouteImport.update({
@@ -39,9 +43,59 @@ const DocsRoute = DocsRouteImport.update({
   path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const UserRoute = UserRouteImport.update({
+  id: '/user',
+  path: '/user',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/_index',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAdminsRoute = AdminAdminsRouteImport.update({
+  id: '/admin/admins',
+  path: '/admin/admins',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminApiKeysRoute = AdminApiKeysRouteImport.update({
+  id: '/admin/api-keys',
+  path: '/admin/api-keys',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminBansRoute = AdminBansRouteImport.update({
+  id: '/admin/bans',
+  path: '/admin/bans',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/admin/dashboard',
+  path: '/admin/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminErrorsRoute = AdminErrorsRouteImport.update({
+  id: '/admin/errors',
+  path: '/admin/errors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminFallbacksRoute = AdminFallbacksRouteImport.update({
+  id: '/admin/fallbacks',
+  path: '/admin/fallbacks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminModelsRoute = AdminModelsRouteImport.update({
+  id: '/admin/models',
+  path: '/admin/models',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminProvidersRoute = AdminProvidersRouteImport.update({
+  id: '/admin/providers',
+  path: '/admin/providers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UserIndexRoute = UserIndexRouteImport.update({
@@ -54,54 +108,29 @@ const UserDashboardRoute = UserDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => UserRoute,
 } as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
+const V1MessagesRoute = V1MessagesRouteImport.update({
+  id: '/v1/messages',
+  path: '/v1/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminProvidersRoute = AdminProvidersRouteImport.update({
-  id: '/admin/providers',
-  path: '/admin/providers',
+const V1ModelsRoute = V1ModelsRouteImport.update({
+  id: '/v1/models',
+  path: '/v1/models',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminModelsRoute = AdminModelsRouteImport.update({
-  id: '/admin/models',
-  path: '/admin/models',
+const V1ChatCompletionsRoute = V1ChatCompletionsRouteImport.update({
+  id: '/v1/chat/completions',
+  path: '/v1/chat/completions',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminFallbacksRoute = AdminFallbacksRouteImport.update({
-  id: '/admin/fallbacks',
-  path: '/admin/fallbacks',
-  getParentRoute: () => rootRouteImport,
+const V1MessagesCount_tokensRoute = V1MessagesCount_tokensRouteImport.update({
+  id: '/count_tokens',
+  path: '/count_tokens',
+  getParentRoute: () => V1MessagesRoute,
 } as any)
-const AdminErrorsRoute = AdminErrorsRouteImport.update({
-  id: '/admin/errors',
-  path: '/admin/errors',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminDashboardRoute = AdminDashboardRouteImport.update({
-  id: '/admin/dashboard',
-  path: '/admin/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminBansRoute = AdminBansRouteImport.update({
-  id: '/admin/bans',
-  path: '/admin/bans',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminApiKeysRoute = AdminApiKeysRouteImport.update({
-  id: '/admin/api-keys',
-  path: '/admin/api-keys',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminAdminsRoute = AdminAdminsRouteImport.update({
-  id: '/admin/admins',
-  path: '/admin/admins',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/_index',
-  path: '/admin',
+const ApiPublicV1MessagesRoute = ApiPublicV1MessagesRouteImport.update({
+  id: '/api/public/v1/messages',
+  path: '/api/public/v1/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicV1ModelsRoute = ApiPublicV1ModelsRouteImport.update({
@@ -109,22 +138,17 @@ const ApiPublicV1ModelsRoute = ApiPublicV1ModelsRouteImport.update({
   path: '/api/public/v1/models',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicV1MessagesRoute = ApiPublicV1MessagesRouteImport.update({
-  id: '/api/public/v1/messages',
-  path: '/api/public/v1/messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicV1MessagesCount_tokensRoute =
-  ApiPublicV1MessagesCount_tokensRouteImport.update({
-    id: '/count_tokens',
-    path: '/count_tokens',
-    getParentRoute: () => ApiPublicV1MessagesRoute,
-  } as any)
 const ApiPublicV1ChatCompletionsRoute =
   ApiPublicV1ChatCompletionsRouteImport.update({
     id: '/api/public/v1/chat/completions',
     path: '/api/public/v1/chat/completions',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicV1MessagesCount_tokensRoute =
+  ApiPublicV1MessagesCount_tokensRouteImport.update({
+    id: '/count_tokens',
+    path: '/count_tokens',
+    getParentRoute: () => ApiPublicV1MessagesRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -142,7 +166,11 @@ export interface FileRoutesByFullPath {
   '/admin/providers': typeof AdminProvidersRoute
   '/admin/users': typeof AdminUsersRoute
   '/user/dashboard': typeof UserDashboardRoute
+  '/v1/messages': typeof V1MessagesRouteWithChildren
+  '/v1/models': typeof V1ModelsRoute
   '/user/': typeof UserIndexRoute
+  '/v1/chat/completions': typeof V1ChatCompletionsRoute
+  '/v1/messages/count_tokens': typeof V1MessagesCount_tokensRoute
   '/api/public/v1/messages': typeof ApiPublicV1MessagesRouteWithChildren
   '/api/public/v1/models': typeof ApiPublicV1ModelsRoute
   '/api/public/v1/chat/completions': typeof ApiPublicV1ChatCompletionsRoute
@@ -162,7 +190,11 @@ export interface FileRoutesByTo {
   '/admin/providers': typeof AdminProvidersRoute
   '/admin/users': typeof AdminUsersRoute
   '/user/dashboard': typeof UserDashboardRoute
+  '/v1/messages': typeof V1MessagesRouteWithChildren
+  '/v1/models': typeof V1ModelsRoute
   '/user': typeof UserIndexRoute
+  '/v1/chat/completions': typeof V1ChatCompletionsRoute
+  '/v1/messages/count_tokens': typeof V1MessagesCount_tokensRoute
   '/api/public/v1/messages': typeof ApiPublicV1MessagesRouteWithChildren
   '/api/public/v1/models': typeof ApiPublicV1ModelsRoute
   '/api/public/v1/chat/completions': typeof ApiPublicV1ChatCompletionsRoute
@@ -184,7 +216,11 @@ export interface FileRoutesById {
   '/admin/providers': typeof AdminProvidersRoute
   '/admin/users': typeof AdminUsersRoute
   '/user/dashboard': typeof UserDashboardRoute
+  '/v1/messages': typeof V1MessagesRouteWithChildren
+  '/v1/models': typeof V1ModelsRoute
   '/user/': typeof UserIndexRoute
+  '/v1/chat/completions': typeof V1ChatCompletionsRoute
+  '/v1/messages/count_tokens': typeof V1MessagesCount_tokensRoute
   '/api/public/v1/messages': typeof ApiPublicV1MessagesRouteWithChildren
   '/api/public/v1/models': typeof ApiPublicV1ModelsRoute
   '/api/public/v1/chat/completions': typeof ApiPublicV1ChatCompletionsRoute
@@ -207,7 +243,11 @@ export interface FileRouteTypes {
     | '/admin/providers'
     | '/admin/users'
     | '/user/dashboard'
+    | '/v1/messages'
+    | '/v1/models'
     | '/user/'
+    | '/v1/chat/completions'
+    | '/v1/messages/count_tokens'
     | '/api/public/v1/messages'
     | '/api/public/v1/models'
     | '/api/public/v1/chat/completions'
@@ -227,7 +267,11 @@ export interface FileRouteTypes {
     | '/admin/providers'
     | '/admin/users'
     | '/user/dashboard'
+    | '/v1/messages'
+    | '/v1/models'
     | '/user'
+    | '/v1/chat/completions'
+    | '/v1/messages/count_tokens'
     | '/api/public/v1/messages'
     | '/api/public/v1/models'
     | '/api/public/v1/chat/completions'
@@ -248,7 +292,11 @@ export interface FileRouteTypes {
     | '/admin/providers'
     | '/admin/users'
     | '/user/dashboard'
+    | '/v1/messages'
+    | '/v1/models'
     | '/user/'
+    | '/v1/chat/completions'
+    | '/v1/messages/count_tokens'
     | '/api/public/v1/messages'
     | '/api/public/v1/models'
     | '/api/public/v1/chat/completions'
@@ -269,6 +317,9 @@ export interface RootRouteChildren {
   AdminModelsRoute: typeof AdminModelsRoute
   AdminProvidersRoute: typeof AdminProvidersRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  V1MessagesRoute: typeof V1MessagesRouteWithChildren
+  V1ModelsRoute: typeof V1ModelsRoute
+  V1ChatCompletionsRoute: typeof V1ChatCompletionsRoute
   ApiPublicV1MessagesRoute: typeof ApiPublicV1MessagesRouteWithChildren
   ApiPublicV1ModelsRoute: typeof ApiPublicV1ModelsRoute
   ApiPublicV1ChatCompletionsRoute: typeof ApiPublicV1ChatCompletionsRoute
@@ -276,11 +327,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/user': {
-      id: '/user'
-      path: '/user'
-      fullPath: '/user'
-      preLoaderRoute: typeof UserRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs': {
@@ -290,11 +341,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/user': {
+      id: '/user'
+      path: '/user'
+      fullPath: '/user'
+      preLoaderRoute: typeof UserRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/_index': {
+      id: '/admin/_index'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/admins': {
+      id: '/admin/admins'
+      path: '/admin/admins'
+      fullPath: '/admin/admins'
+      preLoaderRoute: typeof AdminAdminsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/api-keys': {
+      id: '/admin/api-keys'
+      path: '/admin/api-keys'
+      fullPath: '/admin/api-keys'
+      preLoaderRoute: typeof AdminApiKeysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/bans': {
+      id: '/admin/bans'
+      path: '/admin/bans'
+      fullPath: '/admin/bans'
+      preLoaderRoute: typeof AdminBansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/dashboard': {
+      id: '/admin/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/errors': {
+      id: '/admin/errors'
+      path: '/admin/errors'
+      fullPath: '/admin/errors'
+      preLoaderRoute: typeof AdminErrorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/fallbacks': {
+      id: '/admin/fallbacks'
+      path: '/admin/fallbacks'
+      fullPath: '/admin/fallbacks'
+      preLoaderRoute: typeof AdminFallbacksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/models': {
+      id: '/admin/models'
+      path: '/admin/models'
+      fullPath: '/admin/models'
+      preLoaderRoute: typeof AdminModelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/providers': {
+      id: '/admin/providers'
+      path: '/admin/providers'
+      fullPath: '/admin/providers'
+      preLoaderRoute: typeof AdminProvidersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/user/': {
@@ -311,74 +432,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UserDashboardRouteImport
       parentRoute: typeof UserRoute
     }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
+    '/v1/messages': {
+      id: '/v1/messages'
+      path: '/v1/messages'
+      fullPath: '/v1/messages'
+      preLoaderRoute: typeof V1MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/providers': {
-      id: '/admin/providers'
-      path: '/admin/providers'
-      fullPath: '/admin/providers'
-      preLoaderRoute: typeof AdminProvidersRouteImport
+    '/v1/models': {
+      id: '/v1/models'
+      path: '/v1/models'
+      fullPath: '/v1/models'
+      preLoaderRoute: typeof V1ModelsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/models': {
-      id: '/admin/models'
-      path: '/admin/models'
-      fullPath: '/admin/models'
-      preLoaderRoute: typeof AdminModelsRouteImport
+    '/v1/chat/completions': {
+      id: '/v1/chat/completions'
+      path: '/v1/chat/completions'
+      fullPath: '/v1/chat/completions'
+      preLoaderRoute: typeof V1ChatCompletionsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/fallbacks': {
-      id: '/admin/fallbacks'
-      path: '/admin/fallbacks'
-      fullPath: '/admin/fallbacks'
-      preLoaderRoute: typeof AdminFallbacksRouteImport
-      parentRoute: typeof rootRouteImport
+    '/v1/messages/count_tokens': {
+      id: '/v1/messages/count_tokens'
+      path: '/count_tokens'
+      fullPath: '/v1/messages/count_tokens'
+      preLoaderRoute: typeof V1MessagesCount_tokensRouteImport
+      parentRoute: typeof V1MessagesRoute
     }
-    '/admin/errors': {
-      id: '/admin/errors'
-      path: '/admin/errors'
-      fullPath: '/admin/errors'
-      preLoaderRoute: typeof AdminErrorsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/dashboard': {
-      id: '/admin/dashboard'
-      path: '/admin/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AdminDashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/bans': {
-      id: '/admin/bans'
-      path: '/admin/bans'
-      fullPath: '/admin/bans'
-      preLoaderRoute: typeof AdminBansRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/api-keys': {
-      id: '/admin/api-keys'
-      path: '/admin/api-keys'
-      fullPath: '/admin/api-keys'
-      preLoaderRoute: typeof AdminApiKeysRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/admins': {
-      id: '/admin/admins'
-      path: '/admin/admins'
-      fullPath: '/admin/admins'
-      preLoaderRoute: typeof AdminAdminsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/_index': {
-      id: '/admin/_index'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminIndexRouteImport
+    '/api/public/v1/messages': {
+      id: '/api/public/v1/messages'
+      path: '/api/public/v1/messages'
+      fullPath: '/api/public/v1/messages'
+      preLoaderRoute: typeof ApiPublicV1MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/v1/models': {
@@ -388,11 +474,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1ModelsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/v1/messages': {
-      id: '/api/public/v1/messages'
-      path: '/api/public/v1/messages'
-      fullPath: '/api/public/v1/messages'
-      preLoaderRoute: typeof ApiPublicV1MessagesRouteImport
+    '/api/public/v1/chat/completions': {
+      id: '/api/public/v1/chat/completions'
+      path: '/api/public/v1/chat/completions'
+      fullPath: '/api/public/v1/chat/completions'
+      preLoaderRoute: typeof ApiPublicV1ChatCompletionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/v1/messages/count_tokens': {
@@ -401,13 +487,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/v1/messages/count_tokens'
       preLoaderRoute: typeof ApiPublicV1MessagesCount_tokensRouteImport
       parentRoute: typeof ApiPublicV1MessagesRoute
-    }
-    '/api/public/v1/chat/completions': {
-      id: '/api/public/v1/chat/completions'
-      path: '/api/public/v1/chat/completions'
-      fullPath: '/api/public/v1/chat/completions'
-      preLoaderRoute: typeof ApiPublicV1ChatCompletionsRouteImport
-      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -423,6 +502,18 @@ const UserRouteChildren: UserRouteChildren = {
 }
 
 const UserRouteWithChildren = UserRoute._addFileChildren(UserRouteChildren)
+
+interface V1MessagesRouteChildren {
+  V1MessagesCount_tokensRoute: typeof V1MessagesCount_tokensRoute
+}
+
+const V1MessagesRouteChildren: V1MessagesRouteChildren = {
+  V1MessagesCount_tokensRoute: V1MessagesCount_tokensRoute,
+}
+
+const V1MessagesRouteWithChildren = V1MessagesRoute._addFileChildren(
+  V1MessagesRouteChildren,
+)
 
 interface ApiPublicV1MessagesRouteChildren {
   ApiPublicV1MessagesCount_tokensRoute: typeof ApiPublicV1MessagesCount_tokensRoute
@@ -449,6 +540,9 @@ const rootRouteChildren: RootRouteChildren = {
   AdminModelsRoute: AdminModelsRoute,
   AdminProvidersRoute: AdminProvidersRoute,
   AdminUsersRoute: AdminUsersRoute,
+  V1MessagesRoute: V1MessagesRouteWithChildren,
+  V1ModelsRoute: V1ModelsRoute,
+  V1ChatCompletionsRoute: V1ChatCompletionsRoute,
   ApiPublicV1MessagesRoute: ApiPublicV1MessagesRouteWithChildren,
   ApiPublicV1ModelsRoute: ApiPublicV1ModelsRoute,
   ApiPublicV1ChatCompletionsRoute: ApiPublicV1ChatCompletionsRoute,

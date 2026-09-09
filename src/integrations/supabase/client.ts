@@ -31,7 +31,14 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  // SELF-HOST PATCH: VITE_SUPABASE_URL="SAME_ORIGIN" makes the browser call the
+  // Supabase edge on whatever public origin serves the UI (tunnel URL can change).
+  const RAW_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const SUPABASE_URL = RAW_SUPABASE_URL === "SAME_ORIGIN"
+    ? (typeof window !== "undefined" && window.location && window.location.origin
+        ? window.location.origin
+        : (process.env.SUPABASE_URL || "http://silence-api-gw:8000"))
+    : RAW_SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {

@@ -1,0 +1,88 @@
+# Silence Gateway — local Supabase API gateway (replaces Kong/Envoy).
+#
+# Serves exactly two prefixes and nothing else:
+#   /auth/v1/*  ->  silence-auth:9999/*     (GoTrue)
+#   /rest/v1/*  ->  silence-rest:3000/*     (PostgREST)
+# Every other path is denied with 403, so Studio / postgres-meta / storage /
+# realtime / edge-functions surfaces simply do not exist here.
+#
+# This file is an nginx TEMPLATE: the official image runs envsubst over
+# /etc/nginx/templates/*.template at startup, replacing ${ANON_KEY} and
+# ${SERVICE_ROLE_KEY} from the container environment, and writes the result to
+# /etc/nginx/conf.d/default.conf.
+
+# The api keys are ~170-200 character JWTs, so the default 64-byte hash bucket
+# is too small and nginx refuses to start ("could not build map_hash").
+map_hash_bucket_size 512;
+map_hash_max_size 2048;
+
+map $http_apikey $apikey_ok {
+    default                    0;
+    "${ANON_KEY}"              1;
+    "${SERVICE_ROLE_KEY}"      1;
+}
+
+server {
+    listen 8000;
+    server_name _;
+
+    # Do not leak the version, and cap request sizes.
+    server_tokens off;
+    client_max_body_size 100m;
+
+    # CORS — the dashboard is served from the same origin, but allow any origin
+    # so the API is usable from other clients exactly like hosted Supabase.
+    add_header Access-Control-Allow-Origin  $http_origin always;
+    add_header Access-Control-Allow-Headers "authorization, x-client-info, apikey, content-type, x-supabase-api-version, range, accept, accept-profile, content-profile, prefer, x-request-id, x-user-agent" always;
+    add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD" always;
+    add_header Access-Control-Expose-Headers "content-range, range, content-length, content-type, x-supabase-api-version" always;
+    add_header Access-Control-Max-Age 3600 always;
+
+    location = /health {
+        return 200 "ok\n";
+        add_header Content-Type text/plain;
+    }
+
+    location /auth/v1/ {
+        if ($apikey_ok = 0) { return 403; }
+        if ($request_method = OPTIONS) { return 204; }
+        rewrite ^/auth/v1/(.*)$ /$1 break;
+        proxy_pass http://silence-auth:9999;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto http;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_read_timeout 60s;
+    }
+
+    location /rest/v1/ {
+        if ($apikey_ok = 0) { return 403; }
+        if ($request_method = OPTIONS) { return 204; }
+        rewrite ^/rest/v1/(.*)$ /$1 break;
+        proxy_pass http://silence-rest:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto http;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_read_timeout 120s;
+    }
+
+    # Silence Gateway app (TanStack Start SSR) incl. /v1/* gateway + /api/* + UI.
+    location / {
+        proxy_pass http://silence-app:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade           $http_upgrade;
+        proxy_set_header Connection        "upgrade";
+        proxy_buffering off;
+        proxy_read_timeout 900s;
+        proxy_send_timeout 900s;
+    }
+}
