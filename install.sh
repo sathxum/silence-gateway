@@ -304,7 +304,7 @@ cp -f "$APP/deploy/supabase/volumes/db/"*.sql "$STACK/volumes/db/"
 if ! docker network inspect silence-supabase_default >/dev/null 2>&1; then
   spin "Pulling images (postgres, gotrue, postgrest, nginx)" -- docker compose -f "$STACK/docker-compose.yml" --project-name silence-supabase pull
 fi
-dst() { docker inspect -f '{{.State.Health.Status}}' "$1" 2>/dev/null || echo absent; }
+dst() { docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$1" 2>/dev/null || echo absent; }
 if [ "$(dst silence-db)" != healthy ]; then
   spin "Starting Postgres 17 (data at $STACK/data/db)" -- docker compose -f "$STACK/docker-compose.yml" --project-name silence-supabase up -d db
   local_tries=0
@@ -345,8 +345,13 @@ if ! docker ps --format '{{.Names}}' | grep -q '^silence-api-gw$'; then
   spin "Starting nginx api-gw (127.0.0.1:8000)" -- docker compose -f "$STACK/docker-compose.yml" --project-name silence-supabase up -d api-gw
 fi
 wait_http "Waiting for api-gw health endpoint" "http://127.0.0.1:8000/health" 60
-for c in silence-db silence-auth silence-rest silence-api-gw; do
-  st=$(docker inspect -f '{{.State.Health.Status}}{{if not .State.Health}}{{.State.Status}}{{end}}' "$c" 2>/dev/null || echo missing)
+  # NOTE: api-gw (nginx) and silence-app have NO docker healthcheck, so
+  # {{.State.Health.Status}} alone throws "map has no entry for key Health"
+  # (rc=1) and made fresh installs die here with "silence-api-gw: missing".
+  # The {{if .State.Health}} guard reads the health status only when a
+  # healthcheck actually exists and falls back to .State.Status otherwise.
+  for c in silence-db silence-auth silence-rest silence-api-gw; do
+  st=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$c" 2>/dev/null || echo missing)
   case "$st" in healthy|running) ok "$c: $st" ;; *) fail "$c: $st"; exit 1 ;; esac
 done
 mark 05_supabase
