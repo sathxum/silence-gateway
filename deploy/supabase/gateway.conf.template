@@ -47,6 +47,14 @@ server {
     add_header Access-Control-Expose-Headers "content-range, range, content-length, content-type, x-supabase-api-version" always;
     add_header Access-Control-Max-Age 3600 always;
 
+    # Hardening (security audit 2026-09): anti-clickjacking, no MIME sniffing,
+    # minimal referrer leakage, least-permission browser features.
+    # SAMEORIGIN (not DENY) so any same-origin iframe usage keeps working.
+    add_header X-Frame-Options        SAMEORIGIN always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy        strict-origin-when-cross-origin always;
+    add_header Permissions-Policy     "camera=(), microphone=(), geolocation=()" always;
+
     location = /health {
         return 200 "ok\n";
         add_header Content-Type text/plain;
