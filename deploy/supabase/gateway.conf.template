@@ -1,10 +1,11 @@
 # Silence Gateway — local Supabase API gateway (replaces Kong/Envoy).
 #
-# Serves exactly two prefixes and nothing else:
+# Serves exactly these prefixes and nothing else:
 #   /auth/v1/*  ->  silence-auth:9999/*     (GoTrue)
 #   /rest/v1/*  ->  silence-rest:3000/*     (PostgREST)
-# Every other path is denied with 403, so Studio / postgres-meta / storage /
-# realtime / edge-functions surfaces simply do not exist here.
+#   /           ->  silence-app:3000/*      (Silence Gateway app, TanStack SSR)
+# Every other backend surface is denied with 403, so Studio / postgres-meta /
+# storage / realtime / edge-functions simply do not exist here.
 #
 # This file is an nginx TEMPLATE: the official image runs envsubst over
 # /etc/nginx/templates/*.template at startup, replacing ${ANON_KEY} and
@@ -30,6 +31,14 @@ server {
     server_tokens off;
     client_max_body_size 100m;
 
+    # Upstreams are resolved at REQUEST time via Docker's embedded DNS, NOT at
+    # config load. Why: on a fresh install api-gw starts BEFORE the app
+    # container exists (the installer creates silence-app in a later step), and
+    # after a reboot container start order is not guaranteed. A static
+    # proxy_pass makes nginx refuse to start with:
+    #   "host not found in upstream" — a runtime resolver avoids that entirely.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     # CORS — the dashboard is served from the same origin, but allow any origin
     # so the API is usable from other clients exactly like hosted Supabase.
     add_header Access-Control-Allow-Origin  $http_origin always;
@@ -47,7 +56,8 @@ server {
         if ($apikey_ok = 0) { return 403; }
         if ($request_method = OPTIONS) { return 204; }
         rewrite ^/auth/v1/(.*)$ /$1 break;
-        proxy_pass http://silence-auth:9999;
+        set $auth_upstream http://silence-auth:9999;
+        proxy_pass $auth_upstream;
         proxy_http_version 1.1;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
@@ -61,7 +71,8 @@ server {
         if ($apikey_ok = 0) { return 403; }
         if ($request_method = OPTIONS) { return 204; }
         rewrite ^/rest/v1/(.*)$ /$1 break;
-        proxy_pass http://silence-rest:3000;
+        set $rest_upstream http://silence-rest:3000;
+        proxy_pass $rest_upstream;
         proxy_http_version 1.1;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
@@ -72,8 +83,12 @@ server {
     }
 
     # Silence Gateway app (TanStack Start SSR) incl. /v1/* gateway + /api/* + UI.
+    # Variable upstream = resolved per-request: nginx boots even when the app
+    # container does not exist yet (fresh install) and picks it up the moment
+    # it appears — no restart needed.
     location / {
-        proxy_pass http://silence-app:3000;
+        set $app_upstream http://silence-app:3000;
+        proxy_pass $app_upstream;
         proxy_http_version 1.1;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
