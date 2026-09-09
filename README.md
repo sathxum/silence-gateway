@@ -168,7 +168,7 @@ sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/sathxum/silence-gat
 
 ## Self-host patches (already applied in this repo)
 
-This repo contains two small patches that make the Lovable/TanStack app run
+This repo contains two small patches that make the TanStack Start app run
 self-hosted:
 
 1. `vite.config.ts` — nitro `node-server` preset (the default is a Cloudflare

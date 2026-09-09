@@ -67,15 +67,12 @@ export const verifyLoginChallenge = createServerFn({ method: "POST" })
     const a = Buffer.from(sig); const b = Buffer.from(expected);
     if (a.length !== b.length || !timingSafeEqual(a, b)) { await strike("bad_signature"); throw new Error("Verification failed."); }
 
-    // Safety bypass for automated environments (e.g., Lovable preview/build)
-    // We strictly check the LOVABLE_PREVIEW env var or dev mode.
-    const isSandbox = process.env.NODE_ENV === 'development' || process.env.LOVABLE_PREVIEW === 'true' || process.env.VITE_LOVABLE_PREVIEW === 'true';
-    
-    if (!isSandbox) {
-      if (data.webdriver) { await strike("automation_detected"); throw new Error("Automated browser detected. Sign-in blocked."); }
-      if (data.dwellMs < 1200) { await strike("too_fast"); throw new Error("Please wait a moment before signing in."); }
-      if (data.interactions < 1) { await strike("no_gesture"); throw new Error("Human interaction required. Move the mouse or type, then retry."); }
-    }
+    // Anti-automation checks are ALWAYS enforced — no env-var bypass exists.
+    // (A previous preview-env bypass let anyone who could set an env var
+    // silently disable bot protection; that hole is gone for good.)
+    if (data.webdriver) { await strike("automation_detected"); throw new Error("Automated browser detected. Sign-in blocked."); }
+    if (data.dwellMs < 1200) { await strike("too_fast"); throw new Error("Please wait a moment before signing in."); }
+    if (data.interactions < 1) { await strike("no_gesture"); throw new Error("Human interaction required. Move the mouse or type, then retry."); }
     
     return { ok: true };
   });

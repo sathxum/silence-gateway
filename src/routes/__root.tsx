@@ -7,10 +7,9 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
@@ -37,9 +36,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -84,11 +80,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Silence API is a production OpenAI-compatible gateway with encrypted providers, intelligent routing, real analytics and enterprise reliability." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Silence API — Enterprise OpenAI-compatible Gateway" },
       { name: "twitter:description", content: "Silence API is a production OpenAI-compatible gateway with encrypted providers, intelligent routing, real analytics and enterprise reliability." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/25de82ae-bf79-422c-83e9-b432e6068b2b/id-preview-78655d5e--a65cae9c-1ab3-40bf-b0e2-6cf45feec561.lovable.app-1784389998289.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/25de82ae-bf79-422c-83e9-b432e6068b2b/id-preview-78655d5e--a65cae9c-1ab3-40bf-b0e2-6cf45feec561.lovable.app-1784389998289.png" },
     ],
     links: [
       {

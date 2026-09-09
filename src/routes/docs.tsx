@@ -42,9 +42,13 @@ export const Route = createFileRoute("/docs")({
   component: DocsPage,
 });
 
-const BASE_URL = "https://silence-api.lovable.app/api/public";
+/* Base URL is auto-detected at runtime from the browser origin, so whatever
+   host serves the UI (VPS IP, localhost, or the live Cloudflare tunnel URL)
+   becomes the API base — no hardcoded hosts anywhere. "" is the SSR
+   placeholder; DocsPage fills it in on mount and re-renders every sample. */
+let BASE_URL = "";
 
-/* Brand-accurate SVGs loaded from the Lovable CDN */
+/* Brand-accurate SVGs bundled with the app */
 const ANTHROPIC_URL = anthropicLogo.url;
 const LINUX_URL = linuxLogo.url;
 const UBUNTU_URL = ubuntuLogo.url;
@@ -128,6 +132,13 @@ function CodeBlock({ code, lang, filename }: { code: string; lang?: string; file
 type OS = "linux" | "mac" | "windows";
 
 function DocsPage() {
+  // live origin: fills every code sample with the URL the visitor is actually
+  // browsing (tunnel URL, LAN IP, localhost — always correct, never hardcoded)
+  const [, setOriginReady] = useState(false);
+  useEffect(() => {
+    BASE_URL = window.location.origin;
+    setOriginReady(true);
+  }, []);
   const [os, setOs] = useState<OS>("linux");
   const [kimiOs, setKimiOs] = useState<OS>("linux");
   const [activeSection, setActiveSection] = useState("quickstart");
