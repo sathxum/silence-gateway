@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #===============================================================================
 #  SILENCE GATEWAY — one-command self-hosted installer
+#  v2 — GoTrue SMTP_PORT int fix + self-heal of old .env + on-screen error
+#       diagnostics (no more silent exits at step 5)
 #
 #  Usage (fresh Ubuntu 22.04/24.04 or Debian 12 VPS, as root):
 #    sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/sathxum/silence-gateway/main/install.sh)"
@@ -73,8 +75,8 @@ spin() {
     printf "\r  %s %s ${C_D}%s${C_0}" "$f" "$label" "${pct:+$pct}"
     sleep 0.12
   done
-  wait "$pid"; local rc=$?
-  cat "$logf" >> "$LOG" 2>/dev/null; rm -f "$logf"
+  local rc=0; wait "$pid" || rc=$?
+  cat "$logf" >> "$LOG" 2>/dev/null || true; rm -f "$logf" || true
   if [ "$rc" -eq 0 ]; then
     printf "\r  ${C_G}✔${C_0} %s ${C_D}(%ds)${C_0}\n" "$label" "$((SECONDS-t0))"
     return 0
@@ -100,6 +102,9 @@ wait_http() {
   done
   printf "\r  ${C_R}✘ %s (timeout)${C_0}\n" "$label"
   fail "service did not become healthy — log: $LOG"
+  if docker ps --format '{{.Names}}' | grep -q '^silence-api-gw$'; then
+    docker logs --tail 15 silence-api-gw 2>&1 | sed 's/^/    /' >&2 || true
+  fi
   exit 1
 }
 
@@ -110,6 +115,8 @@ have()  { [ -f "$DONE/$1" ]; }
 # Traps / pre-flight
 #-----------------------------------------------------------------------------
 trap 'fail "installer interrupted at step $STEP — re-run the SAME command to resume"; exit 130' INT TERM
+# never die silently: any unexpected failure prints the failing context + log tail
+trap 'rc=$?; printf "\n" >&2; fail "unexpected error (exit $rc) at step $STEP/${TOTAL} — last lines of $LOG:"; tail -n 20 "$LOG" 2>/dev/null | sed "s/^/    /" >&2 || true; fail "NOTHING was deleted — fix the issue shown above and re-run the SAME command to resume"; exit $rc' ERR
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "This installer must run as root. Re-invoking with sudo ..."
@@ -242,7 +249,9 @@ ENABLE_ANONYMOUS_USERS=false
 ENABLE_EMAIL_AUTOCONFIRM=false
 SMTP_ADMIN_EMAIL=
 SMTP_HOST=
-SMTP_PORT=
+# NOTE: GoTrue (v2.189+) parses GOTRUE_SMTP_PORT as an integer — an empty value
+# crash-loops silence-auth. 0 = SMTP disabled (GoTrue never dials without a host).
+SMTP_PORT=0
 SMTP_USER=
 SMTP_PASS=
 SMTP_SENDER_NAME=
@@ -261,6 +270,12 @@ EOF
   ok "DB password + AES-256-GCM encryption key generated"
 else
   ok "secrets already exist, keeping them ($SENV)"
+  # self-heal: older installs may carry an empty SMTP_PORT which crash-loops
+  # GoTrue (envconfig int parse). Only touched if empty/invalid — real values kept.
+  if ! grep -qE '^SMTP_PORT=[0-9]+' "$SENV"; then
+    if grep -q '^SMTP_PORT=' "$SENV"; then sed -i 's/^SMTP_PORT=.*/SMTP_PORT=0/' "$SENV"; else printf 'SMTP_PORT=0\n' >> "$SENV"; fi
+    ok "fixed empty SMTP_PORT -> 0 (SMTP stays disabled, secrets untouched)"
+  fi
   [ -s "$BASE/.gen_secrets" ] && . "$BASE/.gen_secrets"
   ANON_KEY="$(grep -oP '^ANON_KEY=\K.*' "$SENV" || true)"
   SERVICE_KEY="$(grep -oP '^SERVICE_ROLE_KEY=\K.*' "$SENV" || true)"
@@ -289,7 +304,8 @@ cp -f "$APP/deploy/supabase/volumes/db/"*.sql "$STACK/volumes/db/"
 if ! docker network inspect silence-supabase_default >/dev/null 2>&1; then
   spin "Pulling images (postgres, gotrue, postgrest, nginx)" -- docker compose -f "$STACK/docker-compose.yml" --project-name silence-supabase pull
 fi
-if ! docker ps --format '{{.Names}}' | grep -q '^silence-db$'; then
+dst() { docker inspect -f '{{.State.Health.Status}}' "$1" 2>/dev/null || echo absent; }
+if [ "$(dst silence-db)" != healthy ]; then
   spin "Starting Postgres 17 (data at $STACK/data/db)" -- docker compose -f "$STACK/docker-compose.yml" --project-name silence-supabase up -d db
   local_tries=0
   printf "  ⠋ Waiting for Postgres to accept connections"
@@ -303,9 +319,28 @@ if ! docker ps --format '{{.Names}}' | grep -q '^silence-db$'; then
   done
   [ "$local_tries" -lt 60 ] || { fail "postgres not healthy"; exit 1; }
 fi
-if ! docker ps --format '{{.Names}}' | grep -q '^silence-auth$'; then
+if [ "$(dst silence-auth)" != healthy ] || [ "$(dst silence-rest)" != healthy ]; then
   spin "Starting GoTrue (auth) + PostgREST (rest)" -- docker compose -f "$STACK/docker-compose.yml" --project-name silence-supabase up -d auth rest
 fi
+# gate: auth+rest MUST be healthy before api-gw (compose depends_on healthy);
+# on failure show the real container error on screen instead of dying silently
+wt=0
+printf "  ⠋ Waiting for auth + rest healthchecks"
+while :; do
+  AH="$(dst silence-auth)"; RH="$(dst silence-rest)"
+  if [ "$AH" = healthy ] && [ "$RH" = healthy ]; then break; fi
+  wt=$((wt+1)); if [ "$wt" -ge 90 ]; then break; fi
+  printf "\r  %s Waiting for auth + rest healthchecks ${C_D}(%d/90)${C_0}" "${FRAMES[$((wt % 10))]}" "$wt"
+  sleep 2
+done
+echo
+if [ "${AH:-none}" != healthy ] || [ "${RH:-none}" != healthy ]; then
+  fail "auth/rest not healthy (auth=${AH:-none} rest=${RH:-none}) — silence-auth last logs:"
+  docker logs --tail 15 silence-auth 2>&1 | sed 's/^/      /' >&2 || true
+  fail "NOTHING was deleted — fix the cause shown above, then re-run the SAME command"
+  exit 1
+fi
+printf "\r  ${C_G}✔${C_0} auth + rest healthy                    \n"
 if ! docker ps --format '{{.Names}}' | grep -q '^silence-api-gw$'; then
   spin "Starting nginx api-gw (127.0.0.1:8000)" -- docker compose -f "$STACK/docker-compose.yml" --project-name silence-supabase up -d api-gw
 fi
